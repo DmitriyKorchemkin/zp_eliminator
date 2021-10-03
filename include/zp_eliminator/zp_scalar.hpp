@@ -92,6 +92,26 @@ struct div_mod_trait {
   static constexpr QWord C = (~QWord(0)) / Divisor + 1;
 };
 
+template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply>
+struct direct_mod_trait {
+  using DWord = dword_type_t<Word>;
+  using QWord = dword_type_t<DWord>;
+
+  static constexpr int W_Word = 8 * sizeof(Word);
+  static constexpr int W_DWord = 8 * sizeof(DWord);
+  static constexpr int W_QWord = 8 * sizeof(QWord);
+  static constexpr QWord D = Divisor;
+  static constexpr int L = num_bits(D);
+  static constexpr int LM = num_bits(MaxMultiply) + 1;
+  static constexpr QWord M = QWord(1) << (L + LM);
+
+  static constexpr QWord rem = D - (M % D);
+  static constexpr QWord cmn = (M - 1) / ((QWord(1) << LM) - 1) + 1;
+  static constexpr bool AddMode = rem >= cmn;
+
+  static constexpr QWord C = AddMode ? M / D : (M - 1) / D + 1;
+};
+
 template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply,
           bool Odd = Divisor % 2,
           bool CheckRequired =
@@ -106,6 +126,40 @@ struct DirectMod {
   using OWord = dword_type_t<QWord>;
   static Word Mod(const DWord &dividend) {
     return (OWord(Traits::C * dividend) * Divisor) >> Traits::W_QWord;
+  }
+};
+
+template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply,
+          bool add = direct_mod_trait<Word, Divisor, MaxMultiply>::AddMode>
+struct DirectMod2;
+
+template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply>
+struct DirectMod2<Word, Divisor, MaxMultiply, true> {
+  using Traits = direct_mod_trait<Word, Divisor, MaxMultiply>;
+  using DWord = typename Traits::DWord;
+  using QWord = typename Traits::QWord;
+  static constexpr int Shift = Traits::W_QWord - (Traits::L + Traits::LM);
+
+  static Word Mod(const DWord &dividend) {
+    QWord cm = Traits::C * (dividend + 1);
+    QWord cmm = (cm << Shift) >> Shift;
+    QWord res = (cmm * Divisor) >> (Traits::L + Traits::LM);
+    return res;
+  }
+};
+
+template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply>
+struct DirectMod2<Word, Divisor, MaxMultiply, false> {
+  using Traits = direct_mod_trait<Word, Divisor, MaxMultiply>;
+  using DWord = typename Traits::DWord;
+  using QWord = typename Traits::QWord;
+  static constexpr int Shift = Traits::W_QWord - (Traits::L + Traits::LM);
+
+  static Word Mod(const DWord &dividend) {
+    QWord cm = Traits::C * dividend;
+    QWord cmm = (cm << Shift) >> Shift;
+    QWord res = (cmm * Divisor) >> (Traits::L + Traits::LM);
+    return res;
   }
 };
 
@@ -153,7 +207,7 @@ struct DivMod<Word, Divisor, MaxMultiply, true, true> {
   }
 };
 
-enum class MulAlgo { Explicit, MulShift, MulShiftDirect };
+enum class MulAlgo { Explicit, MulShift, MulShiftDirect, MulShiftDirect2 };
 template <typename Word, Word P, MulAlgo algo> struct MulOp;
 
 template <typename Word, Word P> struct MulOp<Word, P, MulAlgo::Explicit> {
@@ -178,6 +232,17 @@ struct MulOp<Word, P, MulAlgo::MulShiftDirect> {
   using DWord = dword_type_t<Word>;
   static constexpr DWord MaxMul = DWord(P) * (P - 1);
   using ModT = DirectMod<Word, P, MaxMul>;
+
+  Word operator()(const Word &a, const Word &b) const {
+    return ModT::Mod(DWord(a) * b);
+  }
+};
+
+template <typename Word, Word P>
+struct MulOp<Word, P, MulAlgo::MulShiftDirect2> {
+  using DWord = dword_type_t<Word>;
+  static constexpr DWord MaxMul = DWord(P) * (P - 1);
+  using ModT = DirectMod2<Word, P, MaxMul>;
 
   Word operator()(const Word &a, const Word &b) const {
     return ModT::Mod(DWord(a) * b);
