@@ -186,3 +186,12 @@ TEST_CASE("Z13_Mul_MulShift") {
       CHECK(ImulJ.value() == (i * j) % 13);
     }
 }
+
+TEST_CASE("Z13_Mul_MulDirect") {
+  for (int i = 0; i < 13; ++i)
+    for (int j = 0; j < 13; ++j) {
+      const ZP13 I(i), J(j);
+      const ZP13 ImulJ = I.operator*<MulAlgo::MulShiftDirect>(J);
+      CHECK(ImulJ.value() == (i * j) % 13);
+    }
+}

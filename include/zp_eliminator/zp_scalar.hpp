@@ -88,6 +88,8 @@ struct div_mod_trait {
   static constexpr QWord Qc = (J + d - 1) / d;
   static constexpr QWord Nc = Qc * D - 1;
   static constexpr bool CheckRequired = MaxMultiply > Nc;
+
+  static constexpr QWord C = (~QWord(0)) / Divisor + 1;
 };
 
 template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply,
@@ -95,6 +97,17 @@ template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply,
           bool CheckRequired =
               div_mod_trait<Word, Divisor, MaxMultiply>::CheckRequired>
 struct DivMod;
+
+template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply>
+struct DirectMod {
+  using Traits = div_mod_trait<Word, Divisor, MaxMultiply>;
+  using DWord = typename Traits::DWord;
+  using QWord = typename Traits::QWord;
+  using OWord = dword_type_t<QWord>;
+  static Word Mod(const DWord &dividend) {
+    return (OWord(Traits::C * dividend) * Divisor) >> Traits::W_QWord;
+  }
+};
 
 template <typename Word, Word Divisor, dword_type_t<Word> MaxMultiply, bool Odd>
 struct DivMod<Word, Divisor, MaxMultiply, Odd, false> {
@@ -140,7 +153,7 @@ struct DivMod<Word, Divisor, MaxMultiply, true, true> {
   }
 };
 
-enum class MulAlgo { Explicit, MulShift };
+enum class MulAlgo { Explicit, MulShift, MulShiftDirect };
 template <typename Word, Word P, MulAlgo algo> struct MulOp;
 
 template <typename Word, Word P> struct MulOp<Word, P, MulAlgo::Explicit> {
@@ -157,6 +170,17 @@ template <typename Word, Word P> struct MulOp<Word, P, MulAlgo::MulShift> {
 
   Word operator()(const Word &a, const Word &b) const {
     return DivModT::Mod(DWord(a) * b);
+  }
+};
+
+template <typename Word, Word P>
+struct MulOp<Word, P, MulAlgo::MulShiftDirect> {
+  using DWord = dword_type_t<Word>;
+  static constexpr DWord MaxMul = DWord(P) * (P - 1);
+  using ModT = DirectMod<Word, P, MaxMul>;
+
+  Word operator()(const Word &a, const Word &b) const {
+    return ModT::Mod(DWord(a) * b);
   }
 };
 
