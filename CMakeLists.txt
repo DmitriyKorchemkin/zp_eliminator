@@ -41,6 +41,11 @@ add_executable(zp_scalar tests/zp_scalar.cpp)
 target_link_libraries(zp_scalar zp_eliminator doctest)
 target_compile_options(zp_scalar PRIVATE ${BUILD_FLAGS})
 
+add_executable(zp_vector tests/zp_vector.cpp)
+target_link_libraries(zp_vector zp_eliminator doctest)
+target_compile_options(zp_vector PRIVATE ${BUILD_FLAGS})
+
+
 add_executable(zp_benchmarks benchmark/zp_benchmarks.cpp)
 target_link_libraries(zp_benchmarks zp_eliminator benchmark)
 target_compile_options(zp_benchmarks PRIVATE ${BUILD_FLAGS})

@@ -51,3 +51,23 @@ Z32749_Mul<MulAlgo::MulShiftDirect>       760021 ns       759697 ns          923
 
 ## Vector stats
 
+AVX2 vectorization results:
+
+```
+2021-10-03T22:05:47+03:00
+Running ./zp_benchmarks
+Run on (8 X 4109.52 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 256 KiB (x4)
+  L3 Unified 8192 KiB (x1)
+Load Average: 2.17, 1.81, 1.49
+--------------------------------------------------------------------------------
+Benchmark                                      Time             CPU   Iterations
+--------------------------------------------------------------------------------
+Z32749_Plus<PlusMinusAlgo::CondSub>       572376 ns       572184 ns        24437
+Z32749_PlusVec                            117182 ns       117091 ns       119402
+Z32749_Minus<PlusMinusAlgo::CondSub>      572212 ns       572029 ns        24421
+Z32749_MinusVec                           114040 ns       113952 ns       122636
+```

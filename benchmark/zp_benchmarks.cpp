@@ -21,6 +21,7 @@ SOFTWARE.
 ******************************************************************************/
 #include <benchmark/benchmark.h>
 #include <random>
+#include <zp_eliminator/vector_kernels.hpp>
 #include <zp_eliminator/zp_scalar.hpp>
 
 namespace bm = benchmark;
@@ -47,6 +48,22 @@ template <PlusMinusAlgo algo> static void Z32749_Plus(bm::State &state) {
   }
 };
 
+static void Z32749_PlusVec(bm::State &state) {
+  std::mt19937 rng;
+  std::uniform_int_distribution<Word> runif(0, P - 1);
+  ZP a[N], b[N], c[N];
+  for (int i = 0; i < N; ++i) {
+    a[i] = runif(rng);
+    b[i] = runif(rng);
+  }
+
+  int i = 0;
+  for (auto _ : state) {
+
+    VecAddOp<uint16_t, 16, P>::run(a, b, c, N);
+  }
+};
+
 template <PlusMinusAlgo algo> static void Z32749_Minus(bm::State &state) {
   std::mt19937 rng;
   std::uniform_int_distribution<Word> runif(0, P - 1);
@@ -60,6 +77,22 @@ template <PlusMinusAlgo algo> static void Z32749_Minus(bm::State &state) {
   for (auto _ : state) {
     for (int i = 0; i < N; ++i)
       bm::DoNotOptimize(a[i].operator-<algo>(b[i]));
+  }
+};
+
+static void Z32749_MinusVec(bm::State &state) {
+  std::mt19937 rng;
+  std::uniform_int_distribution<Word> runif(0, P - 1);
+  ZP a[N], b[N], c[N];
+  for (int i = 0; i < N; ++i) {
+    a[i] = runif(rng);
+    b[i] = runif(rng);
+  }
+
+  int i = 0;
+  for (auto _ : state) {
+
+    VecSubOp<uint16_t, 16, P>::run(a, b, c, N);
   }
 };
 
@@ -80,8 +113,12 @@ template <MulAlgo algo> static void Z32749_Mul(bm::State &state) {
 };
 BENCHMARK_TEMPLATE(Z32749_Plus, PlusMinusAlgo::Explicit);
 BENCHMARK_TEMPLATE(Z32749_Plus, PlusMinusAlgo::CondSub);
+BENCHMARK(Z32749_PlusVec);
+
 BENCHMARK_TEMPLATE(Z32749_Minus, PlusMinusAlgo::Explicit);
 BENCHMARK_TEMPLATE(Z32749_Minus, PlusMinusAlgo::CondSub);
+BENCHMARK(Z32749_MinusVec);
+
 BENCHMARK_TEMPLATE(Z32749_Mul, MulAlgo::Explicit);
 BENCHMARK_TEMPLATE(Z32749_Mul, MulAlgo::MulShift);
 BENCHMARK_TEMPLATE(Z32749_Mul, MulAlgo::MulShiftDirect);
