@@ -13,11 +13,13 @@ in the smallest type (*word*) that allows adding two elements without overflow
   - `a - b = a + p - b (mod p)` and `a + p - b` is at most `2p - 1`, and we
 need to subtract p atmost once
 - Multiplication
-  - Modulo operation on *double word* product can be reduced to *quad word*
-multiplication, shift, *double word* multiplication and *double word*
-subtraction
-([Integer Division by Constants: Optimal Bounds](https://arxiv.org/pdf/2012.12369.pdf),
+  - Start with `word x word -> double word` product, then compute remainder
+  - Modulo operation on *double word* product can be reduced to either:
+     - *quad word* multiplication, shift, *double word* multiplication and *double word* subtraction
 [Efficient Algorithms for Integer Division by Constants Using Multiplication](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.136.8776&rep=rep1&type=pdf)
+     - *quad word* multiplication, 2x shifts, *quad word* multiplication, shift
+([Integer Division by Constants: Optimal Bounds](https://arxiv.org/pdf/2012.12369.pdf)
+        - Another option:
 [Faster Remainder by Direct Computation: Applications to Compilers and Software Libraries](https://arxiv.org/pdf/1902.01961.pdf))
 - Inverse
   - Fermat's little theorem and `log(p)` exponentiation
