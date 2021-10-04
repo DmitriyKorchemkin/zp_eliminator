@@ -330,6 +330,12 @@ template <uint64_t prime, typename T = minimal_type_t<prime>> struct ZpScalar {
     return *this;
   }
 
+  bool operator==(const ZpScalar &other) const { return other.v == v; }
+
+  bool operator!=(const ZpScalar &other) const { return other.v != v; }
+
+  operator bool() const { return v; }
+
   ZpScalar inverse() const {
     Word pow = P - 2;
     ZpScalar exp(v);
